@@ -1,0 +1,101 @@
+<!--
+/*
+ * @support
+ * http://www.opensourcetechnologies.com/contactus.html
+ * sales@opensourcetechnologies.com
+ * */
+-->
+<modification>
+	<id>Geolocation Based Banner</id>
+	<version>1.0.0</version>
+	<vqmver>2.5.1</vqmver>
+	<author>Ranjeet Kumar Singh</author>
+	<file name="admin/language/english/design/banner.php">
+		<operation>
+			<search position="after"><![CDATA[$_['entry_sort_order']   = 'Sort Order';]]></search>
+			<add><![CDATA[$_['entry_geolocation']  = 'Geolocation (Please select country)';
+			$_['text_select']  = 'Default';
+			]]></add>
+		</operation>
+	</file>
+	<file name="admin/view/template/design/banner_form.tpl">
+		<operation>
+			<search position="after"><![CDATA[<td class="text-left"><?php echo $entry_link; ?></td>]]></search>
+			<add><![CDATA[<td class="text-left"><?php echo $entry_geolocation; ?></td>]]></add>
+		</operation>
+		<operation>
+			<search position="after"><![CDATA[ <td class="text-left" style="width: 30%;"><input type="text" name="banner_image[<?php echo $image_row; ?>][link]" value="<?php echo $banner_image['link']; ?>" placeholder="<?php echo $entry_link; ?>" class="form-control" /></td>]]></search>
+			<add><![CDATA[<td class="text-left" style="width: 30%;">
+				  <select name="banner_image[<?php echo $image_row; ?>][geolocation]" id="input-country" class="form-control">
+					<option value=""><?php echo $text_select; ?></option>
+					<?php foreach ($countries as $country) { ?>
+					<?php if ($country['country_id'] == $banner_image['geolocation']) { ?>
+					<option value="<?php echo $country['country_id']; ?>" selected="selected"><?php echo $country['name']; ?></option>
+					<?php } else { ?>
+					<option value="<?php echo $country['country_id']; ?>"><?php echo $country['name']; ?></option>
+					<?php } ?>
+					<?php } ?>
+				  </select>
+                </td>]]></add>
+		</operation>
+		<operation>
+			<search position="after"><![CDATA[html += '  <td class="text-left"><input type="text" name="banner_image[' + image_row + '][link]" value="" placeholder="<?php echo $entry_link; ?>" class="form-control" /></td>';]]></search>
+			<add><![CDATA[html += '  <td class="text-left"><select name=name="banner_image[' + image_row + '][geolocation]"  class="form-control"><option value=""><?php echo $text_select; ?></option>'; 
+			<?php foreach ($countries as $country) { ?>
+			
+				html += "<option value=<?php echo $country['country_id']; ?>><?php echo $country['name']; ?></option>";
+			
+			<?php } ?>
+			html += ' </select></td>';]]></add>
+		</operation>
+	</file>
+	<file name="admin/model/design/banner.php">
+		<operation>
+			<search position="replace"><![CDATA[$this->db->query("INSERT INTO " . DB_PREFIX . "banner_image SET banner_id = '" . (int)$banner_id . "', link = '" .  $this->db->escape($banner_image['link']) . "', image = '" .  $this->db->escape($banner_image['image']) . "', sort_order = '" . (int)$banner_image['sort_order'] . "'");]]></search>
+			<add><![CDATA[$this->db->query("INSERT INTO " . DB_PREFIX . "banner_image SET banner_id = '" . (int)$banner_id . "', link = '" .  $this->db->escape($banner_image['link']) . "', image = '" .  $this->db->escape($banner_image['image']) . "', sort_order = '" . (int)$banner_image['sort_order'] . "', geolocation = '" . (int)$banner_image['geolocation'] . "'");]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA['sort_order'               => $banner_image['sort_order']]]></search>
+			<add><![CDATA['geolocation'               => $banner_image['geolocation'],]]></add>
+		</operation>
+	</file>
+	<file name="admin/controller/design/banner.php">
+		<operation>
+			<search position="before"><![CDATA['image'                    => $image,]]></search>
+			<add><![CDATA['geolocation'               => $banner_image['geolocation'],]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[$data['entry_sort_order'] = $this->language->get('entry_sort_order');]]></search>
+			<add><![CDATA[$data['entry_geolocation']= $this->language->get('entry_geolocation');
+			$data['text_select'] = $this->language->get('text_select');
+			$this->load->model('localisation/country');
+
+		$data['countries'] = $this->model_localisation_country->getCountries();
+			]]></add>
+		</operation>
+	</file>
+	<file name="catalog/controller/module/slideshow.php">
+		<operation>
+			<search position="before"><![CDATA[$this->load->model('tool/image');]]></search>
+			<add><![CDATA[$this->load->model('localisation/country');]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[$this->load->model('tool/image');]]></search>
+			<add><![CDATA[$this->load->model('localisation/country');
+				$ip  = @$_SERVER['REMOTE_ADDR'];
+				$ip_data = @json_decode	(file_get_contents("http://www.geoplugin.net/json.gp?ip=".$ip));    
+				if($ip_data && $ip_data->geoplugin_countryName != null){
+					$country_code = $ip_data->geoplugin_countryCode;
+				}
+				else $country_code='';
+			]]></add>
+		</operation>
+		<operation>
+			<search position="after"><![CDATA[foreach ($results as $result) {]]></search>
+			<add><![CDATA[$country_id=$result['geolocation'];
+			$country=$this->model_localisation_country->getCountry($country_id);
+			if(($country and ($country_code==$country['iso_code_2'] or $country_code==$country['iso_code_3'])) or empty($country))
+			]]></add>
+		</operation>
+	</file>
+</modification>
